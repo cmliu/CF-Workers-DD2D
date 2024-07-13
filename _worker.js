@@ -230,8 +230,28 @@ ${执行日志}`;
 }
 
 async function log(text) {
-	执行日志 += text + '\n' ;
+	// 获取当前的 UTC 时间
+	const now = new Date();
+  
+	// 将 UTC 时间转换为中国时间 (CST, UTC+8)
+	const offset = 8 * 60 * 60 * 1000; // 8 小时的毫秒数
+	const chinaTime = new Date(now.getTime() + offset);
+	  
+	// 格式化为 yyyy-MM-dd HH:mm:ss
+	const formattedTime = formatDate(chinaTime);
+	执行日志 += formattedTime + ' ' + text + '\n' ;
 	console.log(text);
+}
+
+function formatDate(date) {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	const hours = String(date.getHours()).padStart(2, '0');
+	const minutes = String(date.getMinutes()).padStart(2, '0');
+	const seconds = String(date.getSeconds()).padStart(2, '0');
+	
+	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 // 定义Cloudflare Worker的主处理函数
