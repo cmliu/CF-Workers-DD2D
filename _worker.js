@@ -16,6 +16,29 @@ let CFAPI令牌 = '';//tGb4_4f3efb4bdaf5e22d68ac8exRnJTC6-IWocs
 
 let 执行日志 = '';
 
+let BotToken ='';
+let ChatID =''; 
+let msg = '';
+
+async function sendMessage(msg) {
+	if ( BotToken !== '' && ChatID !== ''){
+		let url = "https://api.telegram.org/bot"+ BotToken +"/sendMessage?chat_id=" + ChatID + "&parse_mode=HTML&text=" + encodeURIComponent(msg);
+		console.log(msg);
+		log(`TG推送完成`);
+		
+		return fetch(url, {
+			method: 'get',
+			headers: {
+				'Accept': 'text/html,application/xhtml+xml,application/xml;',
+				'Accept-Encoding': 'gzip, deflate, br',
+				'User-Agent': 'Mozilla/5.0 Chrome/90.0.4430.72'
+			}
+		});
+	} else {
+		log(`TG推送关闭`);
+	}
+}
+
 // 更新IP数组的函数
 async function API2ip(APIs) {
 	let IP4 = [];
@@ -225,7 +248,7 @@ ${IPv6Text}
 执行日志
 ➖➖➖➖➖➖➖➖➖➖
 ${执行日志}`;
-	
+	await sendMessage(msg);
 	return text;
 }
 
@@ -267,7 +290,10 @@ export default {
 		CF域名 = env.CFDOMAIN || CF域名;
 		CF区域ID = env.CFZONEID || CF区域ID; 
 		CFAPI令牌 = env.CFKEY || CFAPI令牌; 
-		
+
+		BotToken = env.TGTOKEN || BotToken;
+		ChatID = env.TGID || ChatID; 
+
 		log('变量加载完成');
 
 		// 更新IPv4和IPv6数组
@@ -337,11 +363,14 @@ async function 添加解析(A , IP) {
 		const data = await response.json();
 		console.log(JSON.stringify(data, null, 2));
 		if (data.success && data.success == true){
+      msg += `${CF域名} 成功 ${A}记录: ${IP}\n`;
 			log(`${CF域名} 成功 ${A}记录: ${IP}`)
 		} else {
+      msg += `${CF域名} 失败 ${A}记录: ${IP}\n`;
 			log(`${CF域名} 失败 ${A}记录: ${IP}`)
 		}
 	} catch (error) {
+    msg += `${CF域名} 失败 ${A}记录: ${IP}\n`;
 		log(`${CF域名} 失败 ${A}记录: ${IP}`)
 	}
 }
