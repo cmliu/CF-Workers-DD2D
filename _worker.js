@@ -20,6 +20,89 @@ let BotToken ='';
 let ChatID =''; 
 let msg = '';
 
+export default {
+	async fetch(request, env, ctx) {
+		if (env.DOMAIN) domains = await ADD(env.DOMAIN);
+		if (env.IPV4) IPv4 = await ADD(env.IPV4);
+		if (env.IPV6) IPv6 = await ADD(env.IPV6);
+		if (env.IPAPI) ipAPI = await ADD(env.IPAPI);
+		dohURL = env.DOH || dohURL;
+	
+		CF邮箱 = env.CFMAIL || CF邮箱;
+		CF域名 = env.CFDOMAIN || CF域名;
+		CF区域ID = env.CFZONEID || CF区域ID; 
+		CFAPI令牌 = env.CFKEY || CFAPI令牌; 
+	
+		BotToken = env.TGTOKEN || BotToken;
+		ChatID = env.TGID || ChatID; 
+	
+		log('变量加载完成');
+	
+		// 更新IPv4和IPv6数组
+		const d2ip = await updateIPArrays(domains);
+		IPv4 = IPv4.concat(d2ip[0]);
+		IPv6 = IPv6.concat(d2ip[1]);
+		log('域名解析完成');
+	
+		const api2ip = await API2ip(ipAPI);
+		IPv4 = IPv4.concat(api2ip[0]);
+		IPv6 = IPv6.concat(api2ip[1]);
+		log('API调用完成');
+	
+		// 对数组进行去重
+		IPv4 = [...new Set(IPv4)];
+		IPv6 = [...new Set(IPv6)];
+		log('IP去重完成');
+	
+		// 返回输出结果作为响应
+		return new Response(await 输出结果(0));
+	},
+	
+	// 添加对scheduled事件的处理
+	async scheduled(event, env, ctx) {
+		// 在这里执行定期任务的逻辑
+		console.log("Cron job started at " + new Date().toUTCString());
+		
+		// 复用fetch方法中的逻辑
+		if (env.DOMAIN) domains = await ADD(env.DOMAIN);
+		if (env.IPV4) IPv4 = await ADD(env.IPV4);
+		if (env.IPV6) IPv6 = await ADD(env.IPV6);
+		if (env.IPAPI) ipAPI = await ADD(env.IPAPI);
+		dohURL = env.DOH || dohURL;
+	
+		CF邮箱 = env.CFMAIL || CF邮箱;
+		CF域名 = env.CFDOMAIN || CF域名;
+		CF区域ID = env.CFZONEID || CF区域ID; 
+		CFAPI令牌 = env.CFKEY || CFAPI令牌; 
+	
+		BotToken = env.TGTOKEN || BotToken;
+		ChatID = env.TGID || ChatID; 
+	
+		log('Cron: 变量加载完成');
+	
+		// 更新IPv4和IPv6数组
+		const d2ip = await updateIPArrays(domains);
+		IPv4 = IPv4.concat(d2ip[0]);
+		IPv6 = IPv6.concat(d2ip[1]);
+		log('Cron: 域名解析完成');
+	
+		const api2ip = await API2ip(ipAPI);
+		IPv4 = IPv4.concat(api2ip[0]);
+		IPv6 = IPv6.concat(api2ip[1]);
+		log('Cron: API调用完成');
+	
+		// 对数组进行去重
+		IPv4 = [...new Set(IPv4)];
+		IPv6 = [...new Set(IPv6)];
+		log('Cron: IP去重完成');
+	
+		// 执行输出结果，但不需要返回Response对象
+		await 输出结果(1);
+		
+		console.log("Cron job completed at " + new Date().toUTCString());
+	}
+};
+
 async function sendMessage(msg) {
 	if ( BotToken !== '' && ChatID !== ''){
 		let url = "https://api.telegram.org/bot"+ BotToken +"/sendMessage?chat_id=" + ChatID + "&parse_mode=HTML&text=" + encodeURIComponent(msg);
@@ -163,7 +246,7 @@ async function updateIPArrays(domains) {
 }
 
 // 输出结果的函数
-async function 输出结果() {
+async function 输出结果(on) {
 	// 构建IPv6输出字符串
 	let IPv6Text = ''
 	if (IPv6.length != 0){
@@ -178,7 +261,7 @@ async function 输出结果() {
 
 	const CF配置检查 = CF域名 + CF区域ID + CFAPI令牌 + CF邮箱;
 	let CF配置信息
-	if (CF配置检查 && CF配置检查 != ''){
+	if (CF配置检查 && CF配置检查 != '' && on == 1){
 		CF配置信息 = `域名：${CF域名}
 邮箱：${CF邮箱.substring(0, 1)}******${CF邮箱.substring(CF邮箱.length - 1)}
 区域ID：${CF区域ID.substring(0, 3)}*************************${CF区域ID.substring(CF区域ID.length - 4)}
@@ -218,48 +301,62 @@ API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌
 		}
 
 	} else {
-		CF配置信息 = 'Cloudflare配置信息错误！'
+		if(on == 0){
+			CF配置信息 = `域名：${CF域名}
+邮箱：${CF邮箱.substring(0, 1)}******${CF邮箱.substring(CF邮箱.length - 1)}
+区域ID：${CF区域ID.substring(0, 3)}*************************${CF区域ID.substring(CF区域ID.length - 4)}
+API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌.substring(CFAPI令牌.length - 4)}`;
+		} else {
+			CF配置信息 = 'Cloudflare配置信息错误！'
+		}
+		
 	}
 	// 构建最终的输出文本
 	const text = `Domains DDNS to Domain
-➖➖➖➖➖➖➖➖➖➖
+################################################################
 Cloudflare域名配置信息
-➖➖➖➖➖➖➖➖➖➖
+---------------------------------------------------------------
 ${CF配置信息}
 
-➖➖➖➖➖➖➖➖➖➖
+---------------------------------------------------------------
+################################################################
 配置信息
-➖➖➖➖➖➖➖➖➖➖
+---------------------------------------------------------------
 DOH：
 ${dohURL}
 
 解析域名：
 ${domains.join('\n')}${APIText}
 
-➖➖➖➖➖➖➖➖➖➖
+---------------------------------------------------------------
+################################################################
 整理结果
-➖➖➖➖➖➖➖➖➖➖
+---------------------------------------------------------------
 IPv4：
 ${IPv4.join('\n')}
 
 ${IPv6Text}
 
-➖➖➖➖➖➖➖➖➖➖
+---------------------------------------------------------------
+################################################################
 执行日志
-➖➖➖➖➖➖➖➖➖➖
-${执行日志}`;
-	await sendMessage(msg);
+---------------------------------------------------------------
+${执行日志}
+
+---------------------------------------------------------------
+################################################################`;
+	if(on == 1) await sendMessage(msg);
 	return text;
 }
 
 async function log(text) {
 	// 获取当前的 UTC 时间
 	const now = new Date();
-  
+	
 	// 将 UTC 时间转换为中国时间 (CST, UTC+8)
 	const offset = 8 * 60 * 60 * 1000; // 8 小时的毫秒数
 	const chinaTime = new Date(now.getTime() + offset);
-	  
+		
 	// 格式化为 yyyy-MM-dd HH:mm:ss
 	const formattedTime = formatDate(chinaTime);
 	执行日志 += formattedTime + ' ' + text + '\n' ;
@@ -276,48 +373,6 @@ function formatDate(date) {
 	
 	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
-
-// 定义Cloudflare Worker的主处理函数
-export default {
-	async fetch(request, env, ctx) {
-		if (env.DOMAIN) domains = await ADD(env.DOMAIN);
-		if (env.IPV4) IPv4 = await ADD(env.IPV4);
-		if (env.IPV6) IPv6 = await ADD(env.IPV6);
-		if (env.IPAPI) ipAPI = await ADD(env.IPAPI);
-		dohURL = env.DOH || dohURL;
-
-		CF邮箱 = env.CFMAIL || CF邮箱;
-		CF域名 = env.CFDOMAIN || CF域名;
-		CF区域ID = env.CFZONEID || CF区域ID; 
-		CFAPI令牌 = env.CFKEY || CFAPI令牌; 
-
-		BotToken = env.TGTOKEN || BotToken;
-		ChatID = env.TGID || ChatID; 
-
-		log('变量加载完成');
-
-		// 更新IPv4和IPv6数组
-		const d2ip = await updateIPArrays(domains);
-		//console.log(d2ip);
-		IPv4 = IPv4.concat(d2ip[0]);
-		IPv6 = IPv6.concat(d2ip[1]);
-		log('域名解析完成');
-
-		const api2ip = await API2ip(ipAPI);
-		//console.log(api2ip);
-		IPv4 = IPv4.concat(api2ip[0]);
-		IPv6 = IPv6.concat(api2ip[1]);
-		log('API调用完成');
-
-		// 对数组进行去重
-		IPv4 = [...new Set(IPv4)];
-		IPv6 = [...new Set(IPv6)];
-		log('IP去重完成');
-
-		// 返回输出结果作为响应
-		return new Response(await 输出结果());
-	},
-};
 
 async function 删除域名(域名ID) {
 	const 删除域名_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records/${域名ID}`;
@@ -363,14 +418,14 @@ async function 添加解析(A , IP) {
 		const data = await response.json();
 		console.log(JSON.stringify(data, null, 2));
 		if (data.success && data.success == true){
-      msg += `${CF域名} 成功 ${A}记录: ${IP}\n`;
+			msg += `${CF域名} 成功 ${A}记录: ${IP}\n`;
 			log(`${CF域名} 成功 ${A}记录: ${IP}`)
 		} else {
-      msg += `${CF域名} 失败 ${A}记录: ${IP}\n`;
+			msg += `${CF域名} 失败 ${A}记录: ${IP}\n`;
 			log(`${CF域名} 失败 ${A}记录: ${IP}`)
 		}
 	} catch (error) {
-    msg += `${CF域名} 失败 ${A}记录: ${IP}\n`;
+		msg += `${CF域名} 失败 ${A}记录: ${IP}\n`;
 		log(`${CF域名} 失败 ${A}记录: ${IP}`)
 	}
 }
