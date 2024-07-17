@@ -296,7 +296,7 @@ async function 输出结果(on) {
 
 	let domainsTest = '';
 	if (domains.length != 0){
-		domainsTest = `\n解析域名：\n${banIP.join('\n')}\n`;
+		domainsTest = `\n解析域名：\n${domains.join('\n')}\n`;
 	}
 
 	const CF配置检查 = CF域名 + CF区域ID + CFAPI令牌 + CF邮箱;
