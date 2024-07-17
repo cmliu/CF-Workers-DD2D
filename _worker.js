@@ -22,6 +22,7 @@ let msg = '';
 
 export default {
 	async fetch(request, env, ctx) {
+		执行日志 = '';
 		if (env.DOMAIN) domains = await ADD(env.DOMAIN);
 		if (env.IPV4) IPv4 = await ADD(env.IPV4);
 		if (env.IPV6) IPv6 = await ADD(env.IPV6);
@@ -53,7 +54,19 @@ export default {
 		IPv4 = [...new Set(IPv4)];
 		IPv6 = [...new Set(IPv6)];
 		log('IP去重完成');
-	
+		
+		const url = new URL(request.url); // 解析请求URL
+		console.log(url.pathname);
+		if(url.pathname == '/go'){
+			const token = url.searchParams.get('token');
+			if( env.TOKEN && env.TOKEN != token ){
+				if(!token) log('token不能为空');
+				else log('token不正确');
+				return new Response(await 输出结果(0));
+			}
+			log('手动执行');
+			return new Response(await 输出结果(1));
+		}
 		// 返回输出结果作为响应
 		return new Response(await 输出结果(0));
 	},
@@ -176,11 +189,11 @@ async function API2ip(APIs) {
 
 	newIPs.forEach(ip => {
 		if (ipv4Regex.test(ip)) {
-				IP4.push(ip);
-				log(`API获取 A记录${ip}`);
+			IP4.push(ip);
+			log(`API获取 A记录${ip}`);
 		} else if (ipv6Regex.test(ip)) {
-				IP6.push(ip);
-				log(`API获取 AAAA记录${ip}`);
+			IP6.push(ip);
+			log(`API获取 AAAA记录${ip}`);
 		}
 	});
 
@@ -265,8 +278,7 @@ async function 输出结果(on) {
 		CF配置信息 = `域名：${CF域名}
 邮箱：${CF邮箱.substring(0, 1)}******${CF邮箱.substring(CF邮箱.length - 1)}
 区域ID：${CF区域ID.substring(0, 3)}*************************${CF区域ID.substring(CF区域ID.length - 4)}
-API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌.substring(CFAPI令牌.length - 4)}
-		`;
+API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌.substring(CFAPI令牌.length - 4)}`;
 		const 域名现有解析ID_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records?name=${CF域名}`;
 		const response = await fetch(域名现有解析ID_URL, {
 			method: 'GET',
@@ -344,8 +356,15 @@ ${IPv6Text}
 ${执行日志}
 
 ---------------------------------------------------------------
+################################################################
+telegram 交流群 技术大佬~在线发牌!
+https://t.me/CMLiussss
+---------------------------------------------------------------
+github 项目地址 Star!Star!Star!!!
+https://github.com/cmliu/CF-Workers-DD2D
+---------------------------------------------------------------
 ################################################################`;
-	if(on == 1) await sendMessage(msg);
+	if(on == 1) await sendMessage('Domains DDNS to Domain:\n' + msg);
 	return text;
 }
 
@@ -380,9 +399,9 @@ async function 删除域名(域名ID) {
 		const response = await fetch(删除域名_URL, {
 			method: 'DELETE',
 			headers: {
-					'X-Auth-Email': CF邮箱,
-					'Authorization': `Bearer ${CFAPI令牌}`,
-					'Content-Type': 'application/json'
+				'X-Auth-Email': CF邮箱,
+				'Authorization': `Bearer ${CFAPI令牌}`,
+				'Content-Type': 'application/json'
 			}
 		});
 		const data = await response.json();
@@ -403,9 +422,9 @@ async function 添加解析(A , IP) {
 		const response = await fetch(添加解析_URL, {
 			method: 'POST',
 			headers: {
-					'X-Auth-Email': CF邮箱,
-					'Authorization': `Bearer ${CFAPI令牌}`,
-					'Content-Type': 'application/json',
+				'X-Auth-Email': CF邮箱,
+				'Authorization': `Bearer ${CFAPI令牌}`,
+				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
 				type: A,
@@ -431,7 +450,7 @@ async function 添加解析(A , IP) {
 }
 
 async function ADD(envadd) {
-	var addtext = envadd.replace(/[	|"'\r\n]+/g, ',').replace(/,+/g, ','); // 将空格、双引号、单引号和换行符替换为逗号
+	var addtext = envadd.replace(/[	 |"'\r\n]+/g, ',').replace(/,+/g, ','); // 将空格、双引号、单引号和换行符替换为逗号
 	if (addtext.charAt(0) == ',') addtext = addtext.slice(1);
 	if (addtext.charAt(addtext.length - 1) == ',') addtext = addtext.slice(0, addtext.length - 1);
 	const add = addtext.split(',');
