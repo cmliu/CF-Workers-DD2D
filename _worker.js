@@ -1,5 +1,5 @@
 // 定义域名数组
-let domains = ['cdn.xn--b6gac.eu.org'];
+let domains = [];
 // 定义IPv4和IPv6数组，用于存储解析后的IP地址
 let IPv4 = [];
 let IPv6 = [];
@@ -38,7 +38,10 @@ export default {
 		ChatID = env.TGID || ChatID; 
 	
 		log('变量加载完成');
-	
+		if( (domains.length + IPv4.length + IPv6.length + ipAPI.length) == 0){
+			domains = ['cdn.xn--b6gac.eu.org'];
+			log('DOMAIN、IPV4、IPV6、IPAPI变量值均为空，添加 演示解析域名 cdn.xn--b6gac.eu.org')
+		}
 		// 更新IPv4和IPv6数组
 		const d2ip = await updateIPArrays(domains);
 		IPv4 = IPv4.concat(d2ip[0]);
@@ -92,7 +95,10 @@ export default {
 		ChatID = env.TGID || ChatID; 
 	
 		log('Cron: 变量加载完成');
-	
+    if( (domains.length + IPv4.length + IPv6.length + ipAPI.length) == 0){
+			domains = ['cdn.xn--b6gac.eu.org'];
+			log('DOMAIN、IPV4、IPV6、IPAPI变量值均为空，添加 演示解析域名 cdn.xn--b6gac.eu.org')
+		}
 		// 更新IPv4和IPv6数组
 		const d2ip = await updateIPArrays(domains);
 		IPv4 = IPv4.concat(d2ip[0]);
