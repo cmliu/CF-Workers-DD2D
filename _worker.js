@@ -3,6 +3,7 @@ let domains = [];
 // 定义IPv4和IPv6数组，用于存储解析后的IP地址
 let IPv4 = [];
 let IPv6 = [];
+let banIP = [];
 // 定义API列表
 let ipAPI = [];//'https://ipdb.030101.xyz/api/bestproxy.txt'
 // 定义DoH（DNS over HTTPS）URL
@@ -26,6 +27,7 @@ export default {
 		if (env.DOMAIN) domains = await ADD(env.DOMAIN);
 		if (env.IPV4) IPv4 = await ADD(env.IPV4);
 		if (env.IPV6) IPv6 = await ADD(env.IPV6);
+		if (env.BANIP) banIP = await ADD(env.BANIP);
 		if (env.IPAPI) ipAPI = await ADD(env.IPAPI);
 		dohURL = env.DOH || dohURL;
 	
@@ -58,6 +60,11 @@ export default {
 		IPv6 = [...new Set(IPv6)];
 		log('IP去重完成');
 		
+		// 处理被banIP
+		IPv4 = IPv4.filter(ip => !banIP.includes(ip));
+		IPv6 = IPv6.filter(ip => !banIP.includes(ip));
+		log('BAN_IP清理完成');
+
 		const url = new URL(request.url); // 解析请求URL
 		console.log(url.pathname);
 		if(url.pathname == '/go'){
@@ -115,6 +122,11 @@ export default {
 		IPv6 = [...new Set(IPv6)];
 		log('Cron: IP去重完成');
 	
+		// 处理被banIP
+		IPv4 = IPv4.filter(ip => !banIP.includes(ip));
+		IPv6 = IPv6.filter(ip => !banIP.includes(ip));
+		log('Cron: BAN_IP清理完成');
+
 		// 执行输出结果，但不需要返回Response对象
 		await 输出结果(1);
 		
@@ -269,13 +281,22 @@ async function 输出结果(on) {
 	// 构建IPv6输出字符串
 	let IPv6Text = ''
 	if (IPv6.length != 0){
-		IPv6Text = `IPv6：\n${IPv6.join('\n')}`;
+		IPv6Text = `\nIPv6：\n${IPv6.join('\n')}\n`;
 	}
-
 
 	let APIText = ''
 	if (ipAPI.length != 0){
-		APIText = `\nIP_API：\n${ipAPI.join('\n')}`;
+		APIText = `\nIP_API：\n${ipAPI.join('\n')}\n`;
+	}
+
+	let banIPTest = ''
+	if (banIP.length != 0){
+		banIPTest = `\nBAN_IP：\n${banIP.join('\n')}\n`;
+	}
+
+	let domainsTest = '';
+	if (domains.length != 0){
+		domainsTest = `\n解析域名：\n${banIP.join('\n')}\n`;
 	}
 
 	const CF配置检查 = CF域名 + CF区域ID + CFAPI令牌 + CF邮箱;
@@ -342,19 +363,14 @@ ${CF配置信息}
 ---------------------------------------------------------------
 DOH：
 ${dohURL}
-
-解析域名：
-${domains.join('\n')}${APIText}
-
+${domainsTest}${APIText}
 ---------------------------------------------------------------
 ################################################################
 整理结果
 ---------------------------------------------------------------
 IPv4：
 ${IPv4.join('\n')}
-
-${IPv6Text}
-
+${IPv6Text}${banIPTest}
 ---------------------------------------------------------------
 ################################################################
 执行日志
