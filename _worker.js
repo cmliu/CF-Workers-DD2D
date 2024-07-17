@@ -95,7 +95,7 @@ export default {
 		ChatID = env.TGID || ChatID; 
 	
 		log('Cron: 变量加载完成');
-    if( (domains.length + IPv4.length + IPv6.length + ipAPI.length) == 0){
+		if( (domains.length + IPv4.length + IPv6.length + ipAPI.length) == 0){
 			domains = ['cdn.xn--b6gac.eu.org'];
 			log('DOMAIN、IPV4、IPV6、IPAPI变量值均为空，添加 演示解析域名 cdn.xn--b6gac.eu.org')
 		}
