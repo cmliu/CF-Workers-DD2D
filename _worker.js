@@ -90,6 +90,7 @@ export default {
 		if (env.DOMAIN) domains = await ADD(env.DOMAIN);
 		if (env.IPV4) IPv4 = await ADD(env.IPV4);
 		if (env.IPV6) IPv6 = await ADD(env.IPV6);
+		if (env.BANIP) banIP = await ADD(env.BANIP);
 		if (env.IPAPI) ipAPI = await ADD(env.IPAPI);
 		dohURL = env.DOH || dohURL;
 	
