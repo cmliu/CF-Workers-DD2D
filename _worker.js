@@ -322,23 +322,16 @@ API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌
 		if (data.success && data.result.length === 0){
 			log(`${CF域名} 域名解析为空，跳过删除域名流程`)
 		} else {
-			for (let record of data.result) {
-				域名现有解析ID.push(record.id);
-			}
+			域名现有解析ID = data.result.map(record => record.id);
 			log(`现有域名ID\n${域名现有解析ID.join('\n')}`);
 		}
-		// 遍历删除域名
-		for (const 解析ID of 域名现有解析ID) {
-			await 删除域名(解析ID);
-		}
+		
+		// 并发删除域名
+		await 并发删除域名(域名现有解析ID);
 
-		// 遍历解析域名
-		for (const IP of IPv4) {
-			await 添加解析('A' , IP);
-		}
-		for (const IP of IPv6) {
-			await 添加解析('AAAA' , IP);
-		}
+		// 并发添加解析
+		await 并发添加解析('A', IPv4);
+		await 并发添加解析('AAAA', IPv6);
 
 	} else {
 		if(on == 0){
@@ -416,66 +409,77 @@ function formatDate(date) {
 	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-async function 删除域名(域名ID) {
-	const 删除域名_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records/${域名ID}`;
-	try {
-		const response = await fetch(删除域名_URL, {
-			method: 'DELETE',
-			headers: {
-				'X-Auth-Email': CF邮箱,
-				'Authorization': `Bearer ${CFAPI令牌}`,
-				'Content-Type': 'application/json'
-			}
-		});
-		const data = await response.json();
-		console.log(JSON.stringify(data, null, 2));
-		if (data.success && data.success == true){
-			log(`${CF域名}:${域名ID} 删除成功`)
-		} else {
-			log(`${CF域名}:${域名ID} 删除失败`)
-		}
-	} catch (error) {
-		log(`${CF域名}:${域名ID} 删除失败`)
-	}
-}
-
-async function 添加解析(A , IP) {
-	const 添加解析_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records`;
-	try {
-		const response = await fetch(添加解析_URL, {
-			method: 'POST',
-			headers: {
-				'X-Auth-Email': CF邮箱,
-				'Authorization': `Bearer ${CFAPI令牌}`,
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				type: A,
-				name: CF域名,
-				content: IP,
-				ttl: 60,
-				proxied: false
-			})
-		});
-		const data = await response.json();
-		console.log(JSON.stringify(data, null, 2));
-		if (data.success && data.success == true){
-			msg += `${CF域名} 成功 ${A}记录: ${IP}\n`;
-			log(`${CF域名} 成功 ${A}记录: ${IP}`)
-		} else {
-			msg += `${CF域名} 失败 ${A}记录: ${IP}\n`;
-			log(`${CF域名} 失败 ${A}记录: ${IP}`)
-		}
-	} catch (error) {
-		msg += `${CF域名} 失败 ${A}记录: ${IP}\n`;
-		log(`${CF域名} 失败 ${A}记录: ${IP}`)
-	}
-}
-
 async function ADD(envadd) {
 	var addtext = envadd.replace(/[	 |"'\r\n]+/g, ',').replace(/,+/g, ','); // 将空格、双引号、单引号和换行符替换为逗号
 	if (addtext.charAt(0) == ',') addtext = addtext.slice(1);
 	if (addtext.charAt(addtext.length - 1) == ',') addtext = addtext.slice(0, addtext.length - 1);
 	const add = addtext.split(',');
 	return add;
+}
+
+async function 并发删除域名(域名ID数组) {
+	const 删除promises = 域名ID数组.map(域名ID => 删除域名(域名ID));
+	const results = await Promise.allSettled(删除promises);
+	results.forEach((result, index) => {
+		if (result.status === 'fulfilled') {
+			log(`${CF域名}:${域名ID数组[index]} 删除成功`);
+		} else {
+			log(`${CF域名}:${域名ID数组[index]} 删除失败: ${result.reason}`);
+		}
+	});
+}
+
+async function 并发添加解析(recordType, IPs) {
+	const 添加promises = IPs.map(IP => 添加解析(recordType, IP));
+	const results = await Promise.allSettled(添加promises);
+	results.forEach((result, index) => {
+		if (result.status === 'fulfilled') {
+			msg += `${CF域名} 成功 ${recordType}记录: ${IPs[index]}\n`;
+			log(`${CF域名} 成功 ${recordType}记录: ${IPs[index]}`);
+		} else {
+			msg += `${CF域名} 失败 ${recordType}记录: ${IPs[index]}\n`;
+			log(`${CF域名} 失败 ${recordType}记录: ${IPs[index]}: ${result.reason}`);
+		}
+	});
+}
+
+async function 删除域名(域名ID) {
+	const 删除域名_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records/${域名ID}`;
+	const response = await fetch(删除域名_URL, {
+		method: 'DELETE',
+		headers: {
+			'X-Auth-Email': CF邮箱,
+			'Authorization': `Bearer ${CFAPI令牌}`,
+			'Content-Type': 'application/json'
+		}
+	});
+	const data = await response.json();
+	console.log(JSON.stringify(data, null, 2));
+	if (!data.success) {
+		throw new Error(`删除失败: ${JSON.stringify(data.errors)}`);
+	}
+}
+
+async function 添加解析(A, IP) {
+	const 添加解析_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records`;
+	const response = await fetch(添加解析_URL, {
+		method: 'POST',
+		headers: {
+			'X-Auth-Email': CF邮箱,
+			'Authorization': `Bearer ${CFAPI令牌}`,
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			type: A,
+			name: CF域名,
+			content: IP,
+			ttl: 60,
+			proxied: false
+		})
+	});
+	const data = await response.json();
+	console.log(JSON.stringify(data, null, 2));
+	if (!data.success) {
+		throw new Error(`添加失败: ${JSON.stringify(data.errors)}`);
+	}
 }
