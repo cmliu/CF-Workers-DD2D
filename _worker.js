@@ -19,6 +19,7 @@ let 执行日志 = '';
 
 let BotToken ='';
 let ChatID =''; 
+let tgmsg = '';
 
 let 解析成功次数 = 0;
 let 解析失败次数 = 0;
@@ -403,7 +404,7 @@ github 项目地址 Star!Star!Star!!!
 https://github.com/cmliu/CF-Workers-DD2D
 ---------------------------------------------------------------
 ################################################################`;
-	if(on == 1) await sendMessage(`Domains DDNS to Domain 解析完成!\n成功: ${解析成功次数}\n失败: ${解析失败次数}`);
+	if(on == 1) await sendMessage(`Domains DDNS to Domain:\n${CF域名} 解析完成! 成功: ${解析成功次数} 失败: ${解析失败次数}${tgmsg}`);
 	return text;
 }
 
@@ -524,13 +525,16 @@ async function 添加解析(A, IP) {
 		console.log(JSON.stringify(data, null, 2));
 		if (data.success) {
 			解析成功次数 += 1;
+			tgmsg += `\n成功: ${IP}`
 			log(`${CF域名} 成功 ${A}记录: ${IP}`);
 		} else {
 			解析失败次数 += 1;
+			tgmsg += `\n失败: ${IP}`
 			log(`${CF域名} 失败 ${A}记录: ${IP}`);
 		}
 	} catch (error) {
 		解析失败次数 += 1;
+		tgmsg += `\n失败: ${IP}`
 		log(`${CF域名} 失败 ${A}记录: ${IP}`);
 	}
 }
