@@ -525,7 +525,7 @@ async function 添加解析(A, IP) {
 		console.log(JSON.stringify(data, null, 2));
 		if (data.success) {
 			解析成功次数 += 1;
-			tgmsg += `\n成功: ${IP}`
+			tgmsg += `\n${A}记录: ${IP}`
 			log(`${CF域名} 成功 ${A}记录: ${IP}`);
 		} else {
 			解析失败次数 += 1;
