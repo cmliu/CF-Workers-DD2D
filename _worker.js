@@ -319,7 +319,7 @@ API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌
 		const data = await response.json();
 		console.log(JSON.stringify(data, null, 2));
 		let 域名现有解析ID = [];
-		if (data.success && data.result.length === 0){
+		if (!data.success || data.result.length === 0){
 			log(`${CF域名} 域名解析为空，跳过删除域名流程`)
 		} else {
 			域名现有解析ID = data.result.map(record => record.id);
