@@ -304,7 +304,7 @@ async function 输出结果(on) {
 	let CF配置信息
 	if (CF配置检查 && CF配置检查 != '' && on == 1){
 		CF配置信息 = `域名：${CF域名}
-邮箱：${CF邮箱.substring(0, 1)}******${CF邮箱.substring(CF邮箱.length - 1)}
+邮箱：${CF邮箱.substring(0, 1)}******
 区域ID：${CF区域ID.substring(0, 3)}*************************${CF区域ID.substring(CF区域ID.length - 4)}
 API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌.substring(CFAPI令牌.length - 4)}`;
 		const 域名现有解析ID_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records?name=${CF域名}`;
@@ -336,7 +336,7 @@ API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌
 	} else {
 		if(on == 0){
 			CF配置信息 = `域名：${CF域名}
-邮箱：${CF邮箱.substring(0, 1)}******${CF邮箱.substring(CF邮箱.length - 1)}
+邮箱：${CF邮箱.substring(0, 1)}******
 区域ID：${CF区域ID.substring(0, 3)}*************************${CF区域ID.substring(CF区域ID.length - 4)}
 API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌.substring(CFAPI令牌.length - 4)}`;
 		} else {
