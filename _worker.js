@@ -19,66 +19,80 @@ let 执行日志 = '';
 
 let BotToken ='';
 let ChatID =''; 
-let msg = '';
+
+let 解析成功次数 = 0;
+let 解析失败次数 = 0;
 
 export default {
 	async fetch(request, env, ctx) {
 		执行日志 = '';
-		if (env.DOMAIN) domains = await ADD(env.DOMAIN);
-		if (env.IPV4) IPv4 = await ADD(env.IPV4);
-		if (env.IPV6) IPv6 = await ADD(env.IPV6);
-		if (env.BANIP) banIP = await ADD(env.BANIP);
-		if (env.IPAPI) ipAPI = await ADD(env.IPAPI);
-		dohURL = env.DOH || dohURL;
-	
-		CF邮箱 = env.CFMAIL || CF邮箱;
-		CF域名 = env.CFDOMAIN || CF域名;
-		CF区域ID = env.CFZONEID || CF区域ID; 
-		CFAPI令牌 = env.CFKEY || CFAPI令牌; 
-	
-		BotToken = env.TGTOKEN || BotToken;
-		ChatID = env.TGID || ChatID; 
-	
-		log('变量加载完成');
-		if( (domains.length + IPv4.length + IPv6.length + ipAPI.length) == 0){
-			domains = ['cdn.xn--b6gac.eu.org'];
-			log('DOMAIN、IPV4、IPV6、IPAPI变量值均为空，添加 演示解析域名 cdn.xn--b6gac.eu.org')
-		}
-		// 更新IPv4和IPv6数组
-		const d2ip = await updateIPArrays(domains);
-		IPv4 = IPv4.concat(d2ip[0]);
-		IPv6 = IPv6.concat(d2ip[1]);
-		log('域名解析完成');
-	
-		const api2ip = await API2ip(ipAPI);
-		IPv4 = IPv4.concat(api2ip[0]);
-		IPv6 = IPv6.concat(api2ip[1]);
-		log('API调用完成');
-	
-		// 对数组进行去重
-		IPv4 = [...new Set(IPv4)];
-		IPv6 = [...new Set(IPv6)];
-		log('IP去重完成');
-		
-		// 处理被banIP
-		IPv4 = IPv4.filter(ip => !banIP.includes(ip));
-		IPv6 = IPv6.filter(ip => !banIP.includes(ip));
-		log('BAN_IP清理完成');
-
-		const url = new URL(request.url); // 解析请求URL
-		console.log(url.pathname);
-		if(url.pathname == '/go'){
-			const token = url.searchParams.get('token');
-			if( env.TOKEN && env.TOKEN != token ){
-				if(!token) log('token不能为空');
-				else log('token不正确');
-				return new Response(await 输出结果(0));
+		let result = '';
+		try {
+			if (env.DOMAIN) domains = await ADD(env.DOMAIN);
+			if (env.IPV4) IPv4 = await ADD(env.IPV4);
+			if (env.IPV6) IPv6 = await ADD(env.IPV6);
+			if (env.BANIP) banIP = await ADD(env.BANIP);
+			if (env.IPAPI) ipAPI = await ADD(env.IPAPI);
+			dohURL = env.DOH || dohURL;
+			
+			CF邮箱 = env.CFMAIL || CF邮箱;
+			CF域名 = env.CFDOMAIN || CF域名;
+			CF区域ID = env.CFZONEID || CF区域ID; 
+			CFAPI令牌 = env.CFKEY || CFAPI令牌; 
+			
+			BotToken = env.TGTOKEN || BotToken;
+			ChatID = env.TGID || ChatID; 
+			
+			log('变量加载完成');
+			if ((domains.length + IPv4.length + IPv6.length + ipAPI.length) == 0) {
+				domains = ['cdn.xn--b6gac.eu.org'];
+				log('DOMAIN、IPV4、IPV6、IPAPI变量值均为空，添加 演示解析域名 cdn.xn--b6gac.eu.org')
 			}
-			log('手动执行');
-			return new Response(await 输出结果(1));
+			// 更新IPv4和IPv6数组
+			const d2ip = await updateIPArrays(domains);
+			IPv4 = IPv4.concat(d2ip[0]);
+			IPv6 = IPv6.concat(d2ip[1]);
+			log('域名解析完成');
+			
+			const api2ip = await API2ip(ipAPI);
+			IPv4 = IPv4.concat(api2ip[0]);
+			IPv6 = IPv6.concat(api2ip[1]);
+			log('API调用完成');
+			
+			// 对数组进行去重
+			IPv4 = [...new Set(IPv4)];
+			IPv6 = [...new Set(IPv6)];
+			log('IP去重完成');
+			
+			// 处理被banIP
+			IPv4 = IPv4.filter(ip => !banIP.includes(ip));
+			IPv6 = IPv6.filter(ip => !banIP.includes(ip));
+			log('BAN_IP清理完成');
+		
+			const url = new URL(request.url);
+			console.log(url.pathname);
+			if (url.pathname == '/go') {
+				const token = url.searchParams.get('token');
+				if (env.TOKEN && env.TOKEN != token) {
+				if (!token) log('token不能为空');
+				else log('token不正确');
+				result = await 输出结果(0);
+				} else {
+				log('手动执行');
+				result = await 输出结果(1);
+				}
+			} else {
+				result = await 输出结果(0);
+			}
+		} catch (error) {
+			log(`发生错误: ${error.message}`);
+			console.error(error);
+			// 即使发生错误，也确保调用输出结果
+			result = await 输出结果(0);
 		}
+		
 		// 返回输出结果作为响应
-		return new Response(await 输出结果(0));
+		return new Response(result);
 	},
 	
 	// 添加对scheduled事件的处理
@@ -279,6 +293,9 @@ async function updateIPArrays(domains) {
 
 // 输出结果的函数
 async function 输出结果(on) {
+	解析成功次数 = 0;
+	解析失败次数 = 0;
+
 	// 构建IPv6输出字符串
 	let IPv6Text = ''
 	if (IPv6.length != 0){
@@ -300,6 +317,9 @@ async function 输出结果(on) {
 		domainsTest = `\n解析域名：\n${domains.join('\n')}\n`;
 	}
 
+	// 构建解析记录列表
+	const 解析记录列表 = [...IPv4.map(ip => ({ type: 'A', content: ip })), ...IPv6.map(ip => ({ type: 'AAAA', content: ip }))];
+
 	const CF配置检查 = CF域名 + CF区域ID + CFAPI令牌 + CF邮箱;
 	let CF配置信息
 	if (CF配置检查 && CF配置检查 != '' && on == 1){
@@ -311,9 +331,9 @@ API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌
 		const response = await fetch(域名现有解析ID_URL, {
 			method: 'GET',
 			headers: {
-					'X-Auth-Email': CF邮箱,
-					'Authorization': `Bearer ${CFAPI令牌}`,
-					'Content-Type': 'application/json'
+				'X-Auth-Email': CF邮箱,
+				'Authorization': `Bearer ${CFAPI令牌}`,
+				'Content-Type': 'application/json'
 			}
 		});
 		const data = await response.json();
@@ -322,16 +342,19 @@ API令牌：${CFAPI令牌.substring(0, 3)}*************************${CFAPI令牌
 		if (!data.success || data.result.length === 0){
 			log(`${CF域名} 域名解析为空，跳过删除域名流程`)
 		} else {
-			域名现有解析ID = data.result.map(record => record.id);
+			for (let record of data.result) {
+				域名现有解析ID.push(record.id);
+			}
 			log(`现有域名ID\n${域名现有解析ID.join('\n')}`);
 		}
-		
-		// 并发删除域名
-		await 并发删除域名(域名现有解析ID);
 
-		// 并发添加解析
-		await 并发添加解析('A', IPv4);
-		await 并发添加解析('AAAA', IPv6);
+		// 并发删除域名
+		await 批量删除域名(域名现有解析ID);
+
+		await new Promise(resolve => setTimeout(resolve, 8000));
+
+		// 调用批量添加解析
+		await 批量添加解析(解析记录列表);
 
 	} else {
 		if(on == 0){
@@ -355,7 +378,7 @@ ${CF配置信息}
 ################################################################
 配置信息
 ---------------------------------------------------------------
-DOH：
+DoH：
 ${dohURL}
 ${domainsTest}${APIText}
 ---------------------------------------------------------------
@@ -380,7 +403,7 @@ github 项目地址 Star!Star!Star!!!
 https://github.com/cmliu/CF-Workers-DD2D
 ---------------------------------------------------------------
 ################################################################`;
-	if(on == 1) await sendMessage('Domains DDNS to Domain:\n' + msg);
+	if(on == 1) await sendMessage(`Domains DDNS to Domain 解析完成!\n成功: ${解析成功次数}\n失败: ${解析失败次数}`);
 	return text;
 }
 
@@ -417,32 +440,33 @@ async function ADD(envadd) {
 	return add;
 }
 
-async function 并发删除域名(域名ID数组) {
-	const 删除promises = 域名ID数组.map(域名ID => 删除域名(域名ID));
-	const results = await Promise.allSettled(删除promises);
-	results.forEach((result, index) => {
-		if (result.status === 'fulfilled') {
-			log(`${CF域名}:${域名ID数组[index]} 删除成功`);
-		} else {
-			log(`${CF域名}:${域名ID数组[index]} 删除失败: ${result.reason}`);
+async function 批量删除域名(域名ID数组) {
+	const 批次大小 = 4; // 每批并发请求的数量
+	const 批次间隔 = 2000; // 批次之间的间隔时间（毫秒）
+  
+	for (let i = 0; i < 域名ID数组.length; i += 批次大小) {
+		const 当前批次 = 域名ID数组.slice(i, i + 批次大小);
+		
+		// 并发删除当前批次的域名
+		const 删除promises = 当前批次.map(域名ID => 删除域名(域名ID));
+		const results = await Promise.allSettled(删除promises);
+		
+		results.forEach((result, index) => {
+			if (result.status === 'fulfilled') {
+			log(`${CF域名}:${当前批次[index]} 删除成功`);
+			} else {
+			log(`${CF域名}:${当前批次[index]} 删除失败: ${result.reason}`);
+			}
+		});
+	
+		// 如果还有下一批，则等待指定的间隔时间
+		if (i + 批次大小 < 域名ID数组.length) {
+			await new Promise(resolve => setTimeout(resolve, 批次间隔));
 		}
-	});
+	}
 }
-
-async function 并发添加解析(recordType, IPs) {
-	const 添加promises = IPs.map(IP => 添加解析(recordType, IP));
-	const results = await Promise.allSettled(添加promises);
-	results.forEach((result, index) => {
-		if (result.status === 'fulfilled') {
-			msg += `${CF域名} 成功 ${recordType}记录: ${IPs[index]}\n`;
-			log(`${CF域名} 成功 ${recordType}记录: ${IPs[index]}`);
-		} else {
-			msg += `${CF域名} 失败 ${recordType}记录: ${IPs[index]}\n`;
-			log(`${CF域名} 失败 ${recordType}记录: ${IPs[index]}: ${result.reason}`);
-		}
-	});
-}
-
+  
+// 删除单个域名的函数保持不变
 async function 删除域名(域名ID) {
 	const 删除域名_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records/${域名ID}`;
 	const response = await fetch(删除域名_URL, {
@@ -460,26 +484,53 @@ async function 删除域名(域名ID) {
 	}
 }
 
+async function 批量添加解析(解析记录列表) {
+	const 批次大小 = 4; // 每批并发请求的数量
+	const 批次间隔 =2000; // 批次之间的间隔时间（毫秒）
+  
+	for (let i = 0; i < 解析记录列表.length; i += 批次大小) {
+		const 当前批次 = 解析记录列表.slice(i, i + 批次大小);
+		
+		// 并发发送当前批次的请求
+		await Promise.all(当前批次.map(记录 => 添加解析(记录.type, 记录.content)));
+		
+		// 如果还有下一批，则等待指定的间隔时间
+		if (i + 批次大小 < 解析记录列表.length) {
+			await new Promise(resolve => setTimeout(resolve, 批次间隔));
+		}
+	}
+}
+  
+// 修改添加解析函数，返回一个 Promise
 async function 添加解析(A, IP) {
 	const 添加解析_URL = `https://api.cloudflare.com/client/v4/zones/${CF区域ID}/dns_records`;
-	const response = await fetch(添加解析_URL, {
-		method: 'POST',
-		headers: {
+	try {
+		const response = await fetch(添加解析_URL, {
+			method: 'POST',
+			headers: {
 			'X-Auth-Email': CF邮箱,
 			'Authorization': `Bearer ${CFAPI令牌}`,
 			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
+			},
+			body: JSON.stringify({
 			type: A,
 			name: CF域名,
 			content: IP,
 			ttl: 60,
 			proxied: false
-		})
-	});
-	const data = await response.json();
-	console.log(JSON.stringify(data, null, 2));
-	if (!data.success) {
-		throw new Error(`添加失败: ${JSON.stringify(data.errors)}`);
+			})
+		});
+		const data = await response.json();
+		console.log(JSON.stringify(data, null, 2));
+		if (data.success) {
+			解析成功次数 += 1;
+			log(`${CF域名} 成功 ${A}记录: ${IP}`);
+		} else {
+			解析失败次数 += 1;
+			log(`${CF域名} 失败 ${A}记录: ${IP}`);
+		}
+	} catch (error) {
+		解析失败次数 += 1;
+		log(`${CF域名} 失败 ${A}记录: ${IP}`);
 	}
 }
