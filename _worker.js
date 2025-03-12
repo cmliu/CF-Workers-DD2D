@@ -32,8 +32,8 @@ export default {
 async function 处理DNS更新(env) {
     执行日志 = ''; // 重置执行日志
     
-    const serv00 = ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16'];
-    const serv00s = await ADD(env.SERV00 || env.serv00 || serv00);
+    let serv00s = ['0','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16'];
+    if(env.SERV00 || env.serv00) serv00s = await ADD(env.SERV00 || env.serv00);
 
     CF邮箱 = env.CFMAIL || CF邮箱;
     CF域名 = env.CFDOMAIN || CF域名;
